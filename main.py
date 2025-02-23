@@ -84,14 +84,14 @@ def process_image_chunk(chunk_data):
                     new_height = int(A4[1] * dpi / 72)
                     new_width = int(img.width * height_ratio * dpi / 72)
 
-                # リサイズが必要か確認
+                # WebPの場合は変換をスキップ、それ以外は変換が必要
+                needs_conversion = not is_webp
+
+                # リサイズが必要な場合は実行
                 if needs_resize(img.size, (new_width, new_height), dpi):
                     img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                    needs_conversion = True
-                else:
-                    needs_conversion = not is_webp
 
-                # WebPでない場合または変換が必要な場合のみ最適化と変換を実行
+                # WebPでない場合のみ最適化と変換を実行
                 if needs_conversion:
                     img = optimize_image(img)
                     img_buffer = io.BytesIO()
@@ -124,9 +124,9 @@ def process_image_chunk(chunk_data):
     return chunk_results
 
 def create_pdf_from_buffers(processed_results, output_pdf):
-    """メモリ上の画像バッファからPDFを生成"""
+    """メモリ上の画像バッファからPDFを生成（適度な圧縮あり）"""
     c = canvas.Canvas(output_pdf, pagesize=A4)
-    c.setPageCompression(0)
+    c.setPageCompression(1)  # 圧縮を有効化（1-9の範囲、1は適度な圧縮）
 
     # インデックスでソート
     processed_results.sort(key=lambda x: x['index'])
